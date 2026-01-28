@@ -1,64 +1,40 @@
-# =========================
-# Android / Gradle
-# =========================
-*.apk
-*.aab
-*.ap_
-*.dex
-*.class
-
-# Generated files
-bin/
-gen/
-out/
-build/
-**/build/
-
-# Gradle
-.gradle/
-local.properties
-gradle-app.setting
-!gradle/wrapper/gradle-wrapper.jar
-
-# Android Studio / IntelliJ
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# Android Studio generated
-.navigation/
-captures/
-.externalNativeBuild/
-.cxx/
-
-# Logs
-*.log
-
-# =========================
-# Kotlin / Java
-# =========================
-*.kotlin_module
-
-# =========================
-# OS / Editor
-# =========================
-.DS_Store
-Thumbs.db
-*.swp
-*~
-
-# =========================
-# Firebase / Google Services (as needed)
-# =========================
-# google-services.json is often shared within the team, so it’s usually not ignored.
-# If there are differences per environment, enable the following:
-# google-services.json
-
-# =========================
-# Keystore (recommended to exclude; required)
-# =========================
-*.jks
-*.keystore
-**/release.keystore
-**/key.properties
+# ===== OS / editor ===== 
+.DS_Store 
+Thumbs.db 
+*.swp 
+*.swo 
+ 
+# ===== Gradle / Kotlin ===== 
+.gradle/ 
+.kotlin/ 
+build/ 
+local.properties 
+ 
+# ===== Android Studio / IntelliJ ===== 
+*.iml 
+.idea/ 
+*.ipr 
+*.iws 
+out/ 
+ 
+# ===== Android build outputs ===== 
+*.apk 
+*.aab 
+output-metadata.json 
+ 
+# ===== Android Studio generated ===== 
+captures/ 
+.externalNativeBuild/ 
+.cxx/ 
+ 
+# ===== Profiling ===== 
+*.hprof 
+ 
+# ===== Signing / secrets ===== 
+*.jks 
+*.keystore 
+keystore.properties 
+signing.properties 
+ 
+# ===== Google Services (decide by policy) ===== 
+# google-services.json 
