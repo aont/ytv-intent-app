@@ -2,7 +2,6 @@ package com.example.myapplication
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +17,7 @@ import com.example.myapplication.ui.theme.MyApplicationTheme
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
 
@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openYouTubeUrl(url: String) {
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
 
         val candidates = listOf(
             // 1) YouTube app for Android TV
@@ -157,7 +157,7 @@ private fun normalizeYouTubeUrl(input: String): String? {
     if (trimmed.startsWith("http://", ignoreCase = true) ||
         trimmed.startsWith("https://", ignoreCase = true)
     ) {
-        val uri = runCatching { Uri.parse(trimmed) }.getOrNull() ?: return null
+        val uri = runCatching { trimmed.toUri() }.getOrNull() ?: return null
         val host = uri.host?.lowercase() ?: return null
 
         // youtu.be/<id>
