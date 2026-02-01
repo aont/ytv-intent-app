@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 class MainActivity : ComponentActivity() {
 
@@ -101,8 +104,21 @@ private fun YouTubeLauncherScreen(
                 },
                 placeholder = { Text("https://www.youtube.com/watch?v=...") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                keyboardActions = KeyboardActions(
+                    onGo = {
+                        val normalized = normalizeYouTubeUrl(urlText)
+                        if (normalized == null) {
+                            errorText = "Please enter a valid YouTube URL"
+                        } else {
+                            errorText = null
+                            onOpen(normalized)
+                        }
+                    }
+                )
             )
+
 
             Spacer(Modifier.height(16.dp))
 
