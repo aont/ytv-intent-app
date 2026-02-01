@@ -1,40 +1,15 @@
-# ===== OS / editor ===== 
-.DS_Store 
-Thumbs.db 
-*.swp 
-*.swo 
- 
-# ===== Gradle / Kotlin ===== 
-.gradle/ 
-.kotlin/ 
-build/ 
-local.properties 
- 
-# ===== Android Studio / IntelliJ ===== 
-*.iml 
-.idea/ 
-*.ipr 
-*.iws 
-out/ 
- 
-# ===== Android build outputs ===== 
-*.apk 
-*.aab 
-output-metadata.json 
- 
-# ===== Android Studio generated ===== 
-captures/ 
-.externalNativeBuild/ 
-.cxx/ 
- 
-# ===== Profiling ===== 
-*.hprof 
- 
-# ===== Signing / secrets ===== 
-*.jks 
-*.keystore 
-keystore.properties 
-signing.properties 
- 
-# ===== Google Services (decide by policy) ===== 
-# google-services.json 
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
