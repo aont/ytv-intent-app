@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.aont.youtubeopener
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.aont.youtubeopener.ui.theme.YouTubeOpenerTheme
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MyApplicationTheme {
+            YouTubeOpenerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape

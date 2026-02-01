@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.theme
+package com.aont.youtubeopener.ui.theme
 
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
