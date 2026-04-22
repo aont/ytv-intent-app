@@ -20,12 +20,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
-
-    companion object {
-        private const val YT_TV_PACKAGE = "com.google.android.youtube.tv"
-        private const val YT_MOBILE_PACKAGE = "com.google.android.youtube"
-    }
-
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,39 +31,26 @@ class MainActivity : ComponentActivity() {
                     shape = RectangleShape
                 ) {
                     YouTubeLauncherScreen(
-                        onOpen = { inputUrl ->
-                            val normalized = normalizeYouTubeUrl(inputUrl)
-                            if (normalized == null) {
-                                // A Toast is also fine here
-                                // Toast.makeText(this, "Invalid URL", Toast.LENGTH_SHORT).show()
-                                throw IllegalArgumentException("Invalid YouTube URL")
-                            } else {
-                                openYouTubeUrl(normalized)
-                            }
-                        }
+                        onOpen = { inputUrl -> openUrl(inputUrl) }
                     )
                 }
             }
         }
     }
 
-    private fun openYouTubeUrl(url: String) {
-        val uri = url.toUri()
+    private fun openUrl(input: String) {
+        val request = normalizeUrlForLaunch(input)
+            ?: throw IllegalArgumentException("Invalid supported URL")
+        val uri = request.url.toUri()
 
-        val candidates = listOf(
-            // 1) YouTube app for Android TV
-            Intent(Intent.ACTION_VIEW, uri).setPackage(YT_TV_PACKAGE),
-
-            // 2) Regular YouTube app
-            Intent(Intent.ACTION_VIEW, uri).setPackage(YT_MOBILE_PACKAGE),
-
-            // 3) Browser (last resort)
-            Intent(Intent.ACTION_VIEW, uri)
-        )
+        val packageIntents = request.packages.map { packageName ->
+            Intent(Intent.ACTION_VIEW, uri).setPackage(packageName)
+        }
+        val candidates = packageIntents + Intent(Intent.ACTION_VIEW, uri)
 
         val pm = packageManager
         val intentToLaunch = candidates.firstOrNull { it.resolveActivity(pm) != null }
-            ?: throw ActivityNotFoundException("No app can handle YouTube intent")
+            ?: throw ActivityNotFoundException("No app can handle URL intent")
 
         startActivity(intentToLaunch)
     }
@@ -91,7 +72,7 @@ private fun YouTubeLauncherScreen(
             modifier = Modifier.widthIn(max = 900.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Enter a YouTube URL and press \"Open\"")
+            Text("Enter a YouTube or Prime Video URL and press \"Open\"")
 
             Spacer(Modifier.height(16.dp))
 
@@ -102,18 +83,18 @@ private fun YouTubeLauncherScreen(
                     urlText = it
                     errorText = null
                 },
-                placeholder = { Text("https://www.youtube.com/watch?v=...") },
+                placeholder = { Text("https://www.youtube.com/watch?v=... / https://watch.amazon.co.jp/detail?...") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(
                     onGo = {
-                        val normalized = normalizeYouTubeUrl(urlText)
-                        if (normalized == null) {
-                            errorText = "Please enter a valid YouTube URL"
+                        val launchRequest = normalizeUrlForLaunch(urlText)
+                        if (launchRequest == null) {
+                            errorText = "Please enter a valid supported URL"
                         } else {
                             errorText = null
-                            onOpen(normalized)
+                            onOpen(urlText)
                         }
                     }
                 )
@@ -124,12 +105,12 @@ private fun YouTubeLauncherScreen(
 
             Button(
                 onClick = {
-                    val normalized = normalizeYouTubeUrl(urlText)
-                    if (normalized == null) {
-                        errorText = "Please enter a valid YouTube URL"
+                    val launchRequest = normalizeUrlForLaunch(urlText)
+                    if (launchRequest == null) {
+                        errorText = "Please enter a valid supported URL"
                     } else {
                         errorText = null
-                        onOpen(normalized)
+                        onOpen(urlText)
                     }
                 }
             ) {
@@ -197,4 +178,35 @@ private fun normalizeYouTubeUrl(input: String): String? {
     }
 
     return null
+}
+
+private data class LaunchRequest(
+    val url: String,
+    val packages: List<String>
+)
+
+private const val YT_TV_PACKAGE_NAME = "com.google.android.youtube.tv"
+private const val YT_MOBILE_PACKAGE_NAME = "com.google.android.youtube"
+private const val AMAZON_VIDEO_PACKAGE_NAME = "com.amazon.amazonvideo.livingroom"
+
+private fun normalizeUrlForLaunch(input: String): LaunchRequest? {
+    val trimmed = input.trim()
+    if (trimmed.isEmpty()) return null
+
+    val uri = runCatching { trimmed.toUri() }.getOrNull()
+    if (uri != null && uri.scheme.equals("https", ignoreCase = true)) {
+        val host = uri.host?.lowercase()
+        if (host == "watch.amazon.co.jp" && uri.path == "/detail") {
+            return LaunchRequest(
+                url = trimmed,
+                packages = listOf(AMAZON_VIDEO_PACKAGE_NAME)
+            )
+        }
+    }
+
+    val normalizedYouTube = normalizeYouTubeUrl(trimmed) ?: return null
+    return LaunchRequest(
+        url = normalizedYouTube,
+        packages = listOf(YT_TV_PACKAGE_NAME, YT_MOBILE_PACKAGE_NAME)
+    )
 }
