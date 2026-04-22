@@ -9,13 +9,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.TextField
-import androidx.compose.runtime.*import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
-import com.aont.youtubeopener.ui.theme.YouTubeOpenerTheme
-import androidx.compose.foundation.text.KeyboardActions
+import com.aont.youtubeopener.ui.theme.YouTubeOpenerThemeimport androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.core.net.toUri
@@ -65,12 +65,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
-@Composableprivate fun YouTubeLauncherScreen(
+@Composable
+private fun YouTubeLauncherScreen(
     onOpen: (String) -> Unit
 ) {
     var urlText by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
-
     Box(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         contentAlignment = Alignment.Center
