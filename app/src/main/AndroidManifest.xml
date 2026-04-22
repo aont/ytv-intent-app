@@ -30,5 +30,6 @@
     <queries>
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.google.android.youtube" />
+        <package android:name="com.amazon.amazonvideo.livingroom" />
     </queries>
 </manifest>
