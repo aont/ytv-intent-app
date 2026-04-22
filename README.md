@@ -29,3 +29,27 @@ Valid inputs include:
 - `https://youtu.be/dQw4w9WgXcQ`
 - `https://www.youtube.com/shorts/dQw4w9WgXcQ`
 - `dQw4w9WgXcQ` (video ID only)
+
+## GitHub Actions build
+
+This repo includes `.github/workflows/android.yml` with two jobs:
+
+- `build`: always builds `assembleDebug` and uploads `app-debug.apk`
+- `signed-release`: builds `assembleRelease` only when all signing secrets are set
+
+### Required secrets for signed release
+
+Set these repository secrets in **GitHub → Settings → Secrets and variables → Actions**:
+
+- `ANDROID_KEYSTORE_BASE64`: Base64-encoded JKS/keystore file
+- `ANDROID_KEYSTORE_PASSWORD`: keystore password
+- `ANDROID_KEY_ALIAS`: key alias in the keystore
+- `ANDROID_KEY_PASSWORD`: key password
+
+Example to generate Base64 locally:
+
+```bash
+base64 -i release.keystore | tr -d '\n'
+```
+
+The workflow decodes the keystore at runtime and passes signing values to Gradle via `-Psigning.*` properties.

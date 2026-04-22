@@ -18,6 +18,26 @@ android {
 
     }
 
+    val keystorePath = providers.gradleProperty("signing.storeFile").orNull
+    val keystorePassword = providers.gradleProperty("signing.storePassword").orNull
+    val keyAlias = providers.gradleProperty("signing.keyAlias").orNull
+    val keyPassword = providers.gradleProperty("signing.keyPassword").orNull
+    val hasSigningConfig = !keystorePath.isNullOrBlank() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAlias.isNullOrBlank() &&
+        !keyPassword.isNullOrBlank()
+
+    signingConfigs {
+        if (hasSigningConfig) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -25,6 +45,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
