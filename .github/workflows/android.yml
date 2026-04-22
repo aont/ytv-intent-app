@@ -36,6 +36,8 @@ jobs:
 
   signed-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -95,3 +97,18 @@ jobs:
         with:
           name: app-release-apk
           path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Build release metadata
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        id: release_meta
+        run: |
+          release_id="$(TZ=Asia/Tokyo date +'%Y%m%d-%H%M')-${GITHUB_SHA::7}"
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.release_id }}
+          name: ${{ steps.release_meta.outputs.release_id }}
+          files: app/build/outputs/apk/release/app-release.apk
