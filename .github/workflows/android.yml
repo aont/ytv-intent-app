@@ -36,13 +36,28 @@ jobs:
 
   signed-release:
     runs-on: ubuntu-latest
-    if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check signing secrets availability
+        id: signing_secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            echo "has_signing_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_signing_secrets=false" >> "$GITHUB_OUTPUT"
+            echo "Android signing secrets are not configured; skipping signed release build."
+          fi
+
       - name: Set up JDK 17
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -50,15 +65,18 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         uses: android-actions/setup-android@v3
 
       - name: Decode keystore
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > $RUNNER_TEMP/release.keystore
 
       - name: Build signed release APK
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         env:
           SIGNING_STORE_FILE: ${{ runner.temp }}/release.keystore
           SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -72,6 +90,7 @@ jobs:
             -Psigning.keyPassword="$SIGNING_KEY_PASSWORD"
 
       - name: Upload signed release APK artifact
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
