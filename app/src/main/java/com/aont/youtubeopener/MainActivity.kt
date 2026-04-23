@@ -92,13 +92,12 @@ private fun YouTubeLauncherScreen(
                     errorText = null
                 },
                 placeholder = { Text("https://www.youtube.com/watch?v=... / https://watch.amazon.co.jp/detail?...") },
-                singleLine = true,
+                singleLine = false,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(
                     onGo = {
-                        if (!isSupportedInput(urlText)) {
-                            errorText = "Please enter a valid supported URL"
+                        if (!isSupportedInput(urlText)) {                            errorText = "Please enter a valid supported URL"
                         } else {
                             errorText = null
                             onOpen(urlText)
