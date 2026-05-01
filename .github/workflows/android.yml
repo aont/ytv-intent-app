@@ -25,6 +25,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Create local.properties for Gradle SDK discovery
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 
@@ -69,6 +73,11 @@ jobs:
       - name: Set up Android SDK
         if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
         uses: android-actions/setup-android@v3
+
+      - name: Create local.properties for Gradle SDK discovery
+        if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Decode keystore
         if: ${{ steps.signing_secrets.outputs.has_signing_secrets == 'true' }}
