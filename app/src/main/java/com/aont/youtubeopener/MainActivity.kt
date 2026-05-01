@@ -20,7 +20,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.core.net.toUri
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONArray
@@ -45,33 +44,48 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openUrl(input: String) {
-        lifecycleScope.launch {
-            val request = normalizeUrlForLaunch(this@MainActivity, input)
-                ?: throw IllegalArgumentException("Invalid supported URL")
-            val uri = request.url.toUri()
+    private suspend fun openUrl(input: String) {
+        val request = normalizeUrlForLaunch(this@MainActivity, input)
+            ?: throw IllegalArgumentException("Invalid supported URL")
+        val uri = request.url.toUri()
 
-            val packageIntents = request.packages.map { packageName ->
-                Intent(Intent.ACTION_VIEW, uri).setPackage(packageName)
-            }
-            val candidates = packageIntents + Intent(Intent.ACTION_VIEW, uri)
-
-            val pm = packageManager
-            val intentToLaunch = candidates.firstOrNull { it.resolveActivity(pm) != null }
-                ?: throw ActivityNotFoundException("No app can handle URL intent")
-
-            startActivity(intentToLaunch)
+        val packageIntents = request.packages.map { packageName ->
+            Intent(Intent.ACTION_VIEW, uri).setPackage(packageName)
         }
+        val candidates = packageIntents + Intent(Intent.ACTION_VIEW, uri)
+
+        val pm = packageManager
+        val intentToLaunch = candidates.firstOrNull { it.resolveActivity(pm) != null }
+            ?: throw ActivityNotFoundException("No app can handle URL intent")
+
+        startActivity(intentToLaunch)
     }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun YouTubeLauncherScreen(
-    onOpen: (String) -> Unit
+    onOpen: suspend (String) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var urlText by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    fun submit() {
+        if (!isSupportedInput(urlText)) {
+            errorText = "Please enter a valid supported URL"
+            return
+        }
+        errorText = null
+        coroutineScope.launch {
+            isLoading = true
+            runCatching { onOpen(urlText) }
+                .onFailure { errorText = it.message ?: "Failed to open URL" }
+            isLoading = false
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         contentAlignment = Alignment.Center
@@ -94,14 +108,12 @@ private fun YouTubeLauncherScreen(
                 placeholder = { Text("https://www.youtube.com/watch?v=... / https://watch.amazon.co.jp/detail?...") },
                 singleLine = false,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(
                     onGo = {
-                        if (!isSupportedInput(urlText)) {                            errorText = "Please enter a valid supported URL"
-                        } else {
-                            errorText = null
-                            onOpen(urlText)
-                        }                    }
+                        submit()
+                    }
                 )
             )
 
@@ -109,15 +121,15 @@ private fun YouTubeLauncherScreen(
             Spacer(Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    if (!isSupportedInput(urlText)) {
-                        errorText = "Please enter a valid supported URL"
-                    } else {
-                        errorText = null
-                        onOpen(urlText)
-                    }                }
+                onClick = { submit() },
+                enabled = !isLoading
             ) {
                 Text("Open")
+            }
+
+            if (isLoading) {
+                Spacer(Modifier.height(12.dp))
+                CircularProgressIndicator()
             }
 
             if (errorText != null) {
