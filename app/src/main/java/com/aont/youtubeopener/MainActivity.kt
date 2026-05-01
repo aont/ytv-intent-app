@@ -212,9 +212,7 @@ private fun isSupportedInput(input: String): Boolean {
     if (uri != null && uri.scheme.equals("https", ignoreCase = true)) {
         val host = uri.host?.lowercase()
         if (host == "watch.amazon.co.jp" && uri.path == "/detail") return true
-        if ((host == "www.amazon.co.jp" || host == "amazon.co.jp") && extractAsinFromAmazonUri(uri) != null) {
-            return true
-        }
+        if (host == "www.amazon.co.jp" || host == "amazon.co.jp") return true
     }
     return normalizeYouTubeUrl(trimmed) != null
 }
@@ -224,7 +222,8 @@ private suspend fun normalizeUrlForLaunch(activity: ComponentActivity, input: St
     if (trimmed.isEmpty()) return null
 
     val uri = runCatching { trimmed.toUri() }.getOrNull()
-    if (uri != null && uri.scheme.equals("https", ignoreCase = true)) {        val host = uri.host?.lowercase()
+    if (uri != null && uri.scheme.equals("https", ignoreCase = true)) {
+        val host = uri.host?.lowercase()
         if (host == "watch.amazon.co.jp" && uri.path == "/detail") {
             return LaunchRequest(
                 url = trimmed,
@@ -232,8 +231,7 @@ private suspend fun normalizeUrlForLaunch(activity: ComponentActivity, input: St
             )
         }
         if (host == "www.amazon.co.jp" || host == "amazon.co.jp") {
-            val asin = extractAsinFromAmazonUri(uri) ?: return null
-            val gti = resolveAmazonGtiFromWebView(activity, trimmed, asin) ?: return null
+            val gti = resolveAmazonGtiFromWebView(activity, trimmed) ?: return null
             return LaunchRequest(
                 url = "https://watch.amazon.co.jp/detail?gti=$gti",
                 packages = listOf(AMAZON_VIDEO_PACKAGE_NAME)
@@ -248,17 +246,9 @@ private suspend fun normalizeUrlForLaunch(activity: ComponentActivity, input: St
     )
 }
 
-private fun extractAsinFromAmazonUri(uri: android.net.Uri): String? {
-    val segments = uri.pathSegments
-    val dpIndex = segments.indexOf("dp")
-    val asin = segments.getOrNull(dpIndex + 1)?.trim()?.uppercase()
-    return asin?.takeIf { it.matches(Regex("[A-Z0-9]{10}")) }
-}
-
 private suspend fun resolveAmazonGtiFromWebView(
     activity: ComponentActivity,
-    productUrl: String,
-    asin: String
+    productUrl: String
 ): String? = suspendCancellableCoroutine { continuation ->
     val webView = WebView(activity)
     webView.settings.javaScriptEnabled = true
@@ -270,7 +260,7 @@ private suspend fun resolveAmazonGtiFromWebView(
                 "(function(){var el=document.querySelector('script#dv-web-page-hydration-data'); return el?el.innerHTML:null;})()"
             ) { scriptContent ->
                 val hydrationJson = decodeEvaluateJavascriptResult(scriptContent)
-                val gti = hydrationJson?.let { extractGtiFromHydrationJson(it, asin) }
+                val gti = hydrationJson?.let { extractGtiFromHydrationJson(it) }
                 if (continuation.isActive) {
                     continuation.resume(gti)
                 }
@@ -288,7 +278,7 @@ private fun decodeEvaluateJavascriptResult(result: String?): String? {
     return runCatching { JSONArray("[$result]").getString(0) }.getOrNull()
 }
 
-private fun extractGtiFromHydrationJson(rawJson: String, asin: String): String? {
+private fun extractGtiFromHydrationJson(rawJson: String): String? {
     val root = runCatching { JSONObject(rawJson) }.getOrNull() ?: return null
     val atf = root.optJSONObject("init")
         ?.optJSONObject("preparations")
@@ -301,25 +291,31 @@ private fun extractGtiFromHydrationJson(rawJson: String, asin: String): String? 
         ?.optJSONObject("btf")
         ?.optJSONObject("state")
 
-    val headerCatalogId = atf
-        ?.optJSONObject("detail")
-        ?.optJSONObject("headerDetail")
-        ?.optJSONObject(asin)
-        ?.optString("catalogId")
-        ?.takeIf { !it.isNullOrBlank() }
+    val headerCatalogId = firstNonBlankValue(
+        atf?.optJSONObject("detail")?.optJSONObject("headerDetail"),
+        "catalogId"
+    )
 
-    val selfGti = atf
-        ?.optJSONObject("self")
-        ?.optJSONObject(asin)
-        ?.optString("gti")
-        ?.takeIf { !it.isNullOrBlank() }
+    val selfGti = firstNonBlankValue(
+        atf?.optJSONObject("self"),
+        "gti"
+    )
 
-    val btfCatalogId = btf
-        ?.optJSONObject("detail")
-        ?.optJSONObject("btfMoreDetails")
-        ?.optJSONObject(asin)
-        ?.optString("catalogId")
-        ?.takeIf { !it.isNullOrBlank() }
+    val btfCatalogId = firstNonBlankValue(
+        btf?.optJSONObject("detail")?.optJSONObject("btfMoreDetails"),
+        "catalogId"
+    )
 
     return headerCatalogId ?: selfGti ?: btfCatalogId
+}
+
+private fun firstNonBlankValue(parent: JSONObject?, fieldName: String): String? {
+    if (parent == null) return null
+    val keys = parent.keys()
+    while (keys.hasNext()) {
+        val child = parent.optJSONObject(keys.next()) ?: continue
+        val value = child.optString(fieldName).takeIf { it.isNotBlank() }
+        if (value != null) return value
+    }
+    return null
 }
